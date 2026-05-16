@@ -35,15 +35,29 @@ def test_indexer_client_returns_results():
         mock_response = MagicMock(status_code=200)
         mock_response.raise_for_status = MagicMock()
         mock_response.json.return_value = {
-            "results": [{"text": "content", "source": "note.md", "tags": []}]
+            "results": [{"text": "content", "source": "123/note.md", "tags": []}]
         }
         mock_post.return_value = mock_response
 
         client = IndexerClient("http://indexer:8000")
-        results = client.search("python query")
+        results = client.search("python query", user_id="123")
 
         assert len(results) == 1
-        assert results[0]["source"] == "note.md"
+        assert results[0]["source"] == "123/note.md"
+
+
+def test_indexer_client_passes_user_id():
+    with patch("clients.indexer.httpx.post") as mock_post:
+        mock_response = MagicMock(status_code=200)
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"results": []}
+        mock_post.return_value = mock_response
+
+        client = IndexerClient("http://indexer:8000")
+        client.search("query", user_id="456")
+
+        call_kwargs = mock_post.call_args.kwargs
+        assert call_kwargs["json"]["user_id"] == "456"
 
 
 def test_indexer_client_passes_n_results():
@@ -54,7 +68,7 @@ def test_indexer_client_passes_n_results():
         mock_post.return_value = mock_response
 
         client = IndexerClient("http://indexer:8000")
-        client.search("query", n_results=3)
+        client.search("query", user_id="123", n_results=3)
 
         call_kwargs = mock_post.call_args.kwargs
         assert call_kwargs["json"]["n_results"] == 3
