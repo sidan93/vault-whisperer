@@ -11,6 +11,7 @@ class ChromaWriter:
         chunks: list[str],
         embeddings: list[list[float]],
         tags: list[str],
+        user_id: str,
     ) -> None:
         existing = self._col.get(where={"source": source})
         if existing["ids"]:
@@ -23,12 +24,12 @@ class ChromaWriter:
             documents=chunks,
             embeddings=embeddings,
             metadatas=[
-                {"source": source, "tags": ",".join(tags), "chunk_index": i}
+                {"source": source, "tags": ",".join(tags), "chunk_index": i, "user_id": user_id}
                 for i in range(len(chunks))
             ],
         )
 
-    def search(self, query_embedding: list[float], n_results: int = 5) -> list[dict]:
+    def search(self, query_embedding: list[float], user_id: str, n_results: int = 5) -> list[dict]:
         count = self._col.count()
         if count == 0:
             return []
@@ -36,6 +37,7 @@ class ChromaWriter:
             query_embeddings=[query_embedding],
             n_results=min(n_results, count),
             include=["documents", "metadatas"],
+            where={"user_id": user_id},
         )
         output = []
         for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
