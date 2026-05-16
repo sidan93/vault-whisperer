@@ -37,11 +37,12 @@ app = FastAPI(lifespan=lifespan)
 
 class SearchRequest(BaseModel):
     query: str
+    user_id: str
     n_results: int = 5
 
 
 @app.post("/search")
 def search(req: SearchRequest) -> dict:
     query_emb = _embedder.embed([req.query], task_type="retrieval_query")[0]
-    results = _writer.search(query_emb, n_results=req.n_results)
+    results = _writer.search(query_emb, user_id=req.user_id, n_results=req.n_results)
     return {"results": results}
