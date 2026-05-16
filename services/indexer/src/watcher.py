@@ -19,6 +19,10 @@ class VaultHandler(FileSystemEventHandler):
         if not path.endswith(".md"):
             return
         source = os.path.relpath(path, self._vault_path)
+        parts = Path(source).parts
+        if len(parts) < 2:
+            return
+        user_id = parts[0]
         content = Path(path).read_text(encoding="utf-8")
         chunks = chunk_markdown(content, source)
         if not chunks:
@@ -30,6 +34,7 @@ class VaultHandler(FileSystemEventHandler):
             chunks=texts,
             embeddings=embeddings,
             tags=chunks[0].tags,
+            user_id=user_id,
         )
 
     def on_created(self, event) -> None:
