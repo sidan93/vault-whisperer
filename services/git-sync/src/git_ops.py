@@ -2,6 +2,13 @@ import os
 import subprocess
 
 
+def _git(args: list[str], env: dict, check: bool = False) -> subprocess.CompletedProcess:
+    result = subprocess.run(args, env=env, capture_output=True, text=True)
+    if check and result.returncode != 0:
+        raise RuntimeError(f"git {args[2]} failed: {result.stderr.strip()}")
+    return result
+
+
 def sync_vault(repo_path: str, user_name: str, user_email: str) -> None:
     env = {
         **os.environ,
@@ -11,17 +18,11 @@ def sync_vault(repo_path: str, user_name: str, user_email: str) -> None:
         "GIT_COMMITTER_EMAIL": user_email,
     }
 
-    subprocess.run(["git", "-C", repo_path, "add", "-A"], check=True, env=env)
+    _git(["git", "-C", repo_path, "add", "-A"], env=env, check=True)
 
-    result = subprocess.run(
-        ["git", "-C", repo_path, "diff", "--cached", "--quiet"], env=env
-    )
+    result = _git(["git", "-C", repo_path, "diff", "--cached", "--quiet"], env=env)
     if result.returncode == 0:
         return  # нечего коммитить
 
-    subprocess.run(
-        ["git", "-C", repo_path, "commit", "-m", "vault: auto-sync"],
-        check=True,
-        env=env,
-    )
-    subprocess.run(["git", "-C", repo_path, "push"], check=True, env=env)
+    _git(["git", "-C", repo_path, "commit", "-m", "vault: auto-sync"], env=env, check=True)
+    _git(["git", "-C", repo_path, "push"], env=env, check=True)

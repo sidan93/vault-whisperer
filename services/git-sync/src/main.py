@@ -10,7 +10,7 @@ _USER_EMAIL = os.getenv("GIT_USER_EMAIL", "bot@vault-whisperer")
 
 
 @app.post("/sync")
-async def sync():
+def sync():
     try:
         sync_vault(_REPO_PATH, _USER_NAME, _USER_EMAIL)
         return {"status": "ok"}
