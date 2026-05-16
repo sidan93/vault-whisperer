@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
@@ -23,7 +24,10 @@ def main() -> None:
     app.bot_data["git_sync"] = GitSyncClient(os.getenv("GIT_SYNC_HOST", "http://git-sync:8000"))
     app.bot_data["indexer"] = IndexerClient(os.getenv("INDEXER_HOST", "http://indexer:8000"))
     app.bot_data["vault_path"] = os.getenv("VAULT_PATH", "/vault")
-    app.bot_data["allowed_users"] = load_whitelist("/allowed_users.txt")
+    try:
+        app.bot_data["allowed_users"] = load_whitelist("/allowed_users.txt")
+    except FileNotFoundError:
+        sys.exit("ERROR: /allowed_users.txt not found. Mount the file into the container.")
 
     app.add_handler(CommandHandler("search", search_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, capture_handler))
