@@ -1,4 +1,3 @@
-import os
 from openai import OpenAI
 
 _STRUCTURE_PROMPT = """\
@@ -35,7 +34,10 @@ class DeepSeekClient:
                 {"role": "user", "content": text},
             ],
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("DeepSeek returned no content")
+        return content
 
     def synthesize_answer(self, query: str, chunks: list[dict]) -> str:
         context = "\n\n".join(f"[{c['source']}]\n{c['text']}" for c in chunks)
@@ -46,4 +48,7 @@ class DeepSeekClient:
                 {"role": "user", "content": f"Question: {query}\n\nContext:\n{context}"},
             ],
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("DeepSeek returned no content")
+        return content
