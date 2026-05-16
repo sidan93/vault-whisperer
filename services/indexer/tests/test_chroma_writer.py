@@ -6,6 +6,10 @@ from chroma_writer import ChromaWriter
 @pytest.fixture
 def writer():
     client = chromadb.EphemeralClient()
+    try:
+        client.delete_collection("vault")
+    except Exception:
+        pass
     return ChromaWriter(client)
 
 

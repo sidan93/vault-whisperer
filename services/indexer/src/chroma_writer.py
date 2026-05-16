@@ -1,12 +1,9 @@
-import uuid
-
 import chromadb
 
 
 class ChromaWriter:
-    def __init__(self, client: chromadb.ClientAPI, collection: str = "") -> None:
-        name = collection if collection else f"vault_{uuid.uuid4().hex}"
-        self._col = client.get_or_create_collection(name)
+    def __init__(self, client: chromadb.ClientAPI) -> None:
+        self._col = client.get_or_create_collection("vault")
 
     def upsert_file(
         self,
