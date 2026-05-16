@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from embedder.base import EmbedderBase
+from embedder import get_embedder
 
 
 def test_embedder_base_is_abstract():
@@ -25,6 +26,19 @@ def test_concrete_embedder_works_when_embed_implemented():
     result = stub.embed(["hello"])
     assert len(result) == 1
     assert len(result[0]) == 3
+
+
+def test_get_embedder_returns_google_by_default():
+    with patch.dict("os.environ", {"EMBEDDER_PROVIDER": "google"}):
+        from embedder.google import GoogleEmbedder
+        embedder = get_embedder()
+    assert isinstance(embedder, GoogleEmbedder)
+
+
+def test_get_embedder_raises_on_unknown_provider():
+    with patch.dict("os.environ", {"EMBEDDER_PROVIDER": "unknown_xyz"}):
+        with pytest.raises(ValueError, match="EMBEDDER_PROVIDER"):
+            get_embedder()
 
 
 from embedder.google import GoogleEmbedder

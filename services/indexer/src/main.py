@@ -6,13 +6,14 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from chroma_writer import ChromaWriter
-from embedder.google import GoogleEmbedder
+from embedder import get_embedder
+from embedder.base import EmbedderBase
 from watcher import start_watcher
 
 _VAULT_PATH = os.getenv("VAULT_PATH", "/vault")
 _CHROMA_HOST = os.getenv("CHROMA_HOST", "http://chromadb:8000")
 
-_embedder: GoogleEmbedder | None = None
+_embedder: EmbedderBase | None = None
 _writer: ChromaWriter | None = None
 _observer = None
 
@@ -22,7 +23,7 @@ async def lifespan(app: FastAPI):
     global _embedder, _writer, _observer
     h, _, p = _CHROMA_HOST.removeprefix("http://").partition(":")
     client = chromadb.HttpClient(host=h, port=int(p) if p else 8000)
-    _embedder = GoogleEmbedder()
+    _embedder = get_embedder()
     _writer = ChromaWriter(client)
     _observer = start_watcher(_embedder, _writer, _VAULT_PATH)
     yield
