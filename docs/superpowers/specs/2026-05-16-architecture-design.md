@@ -29,7 +29,7 @@ Telegram-бот для захвата заметок и RAG-поиска по Ob
                bot      → [git-sync]  → github.com
                bot      → [indexer]
                indexer  → [chromadb]
-               indexer  → api.openai.com
+               indexer  → generativelanguage.googleapis.com
                bot      → api.deepseek.com
 ```
 
@@ -42,7 +42,7 @@ Telegram-бот для захвата заметок и RAG-поиска по Ob
 - **Runtime:** Python 3.13
 - **Telegram:** `python-telegram-bot`
 - **LLM (структуризация + синтез ответов):** DeepSeek API (OpenAI-совместимый, `openai` SDK)
-- **Embeddings:** OpenAI `text-embedding-3-small`
+- **Embeddings:** Google `text-embedding-004` (Gemini API)
 - **Vector DB:** ChromaDB (официальный Docker-образ)
 - **File watcher:** `watchdog`
 - **git-sync API:** FastAPI
@@ -115,13 +115,15 @@ vault-whisperer/
 │   │       └── git_ops.py          # commit + push логика
 │   │
 │   ├── indexer/
-│   │   ├── .env.example        # OPENAI_API_KEY, VAULT_PATH, CHROMA_HOST
+│   │   ├── .env.example        # GOOGLE_API_KEY, VAULT_PATH, CHROMA_HOST
 │   │   ├── Dockerfile
 │   │   └── src/
 │   │       ├── main.py             # FastAPI: POST /search
 │   │       ├── watcher.py          # watchdog на vault/
 │   │       ├── chunker.py          # разбивка .md на чанки
-│   │       ├── embedder.py         # OpenAI embeddings (индексация + поиск)
+│   │       ├── embedder/
+│   │       │   ├── base.py         # абстрактный интерфейс EmbedderBase
+│   │       │   └── google.py       # реализация через Google text-embedding-004
 │   │       └── chroma_writer.py    # запись/чтение ChromaDB
 │   │
 │   └── chromadb/
@@ -158,6 +160,12 @@ volumes:
 
 ---
 
+## Архитектурные решения
+
+**Embedder abstraction:** `embedder/base.py` определяет интерфейс `EmbedderBase` с одним методом `embed(texts: list[str]) -> list[list[float]]`. Текущая реализация — `google.py`. Смена провайдера = новый файл + изменение одной строки в конфиге, без изменений в `watcher.py`, `chroma_writer.py` и `main.py`.
+
+---
+
 ## Секреты и изоляция
 
 Каждый сервис имеет собственный `.env` — видит только нужные ему секреты:
@@ -166,5 +174,5 @@ volumes:
 |---|---|
 | `bot` | Telegram token, DeepSeek API key, адреса git-sync и indexer |
 | `git-sync` | SSH-ключ GitHub, git user/email |
-| `indexer` | OpenAI API key |
+| `indexer` | Google API key (Gemini) |
 | `chromadb` | — |
