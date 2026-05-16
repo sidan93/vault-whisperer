@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+from pathlib import Path
 from handlers.capture import _filename_from_content, _structure_and_save
 
 
@@ -23,16 +24,26 @@ def test_filename_fallback_to_timestamp_when_no_title():
     assert len(filename) > 4
 
 
-def test_structure_and_save_writes_file(tmp_path):
+def test_structure_and_save_writes_to_user_subfolder(tmp_path):
     deepseek = MagicMock()
     deepseek.structure_note.return_value = '---\ntitle: "Test Note"\n---\n\nContent'
     git_sync = MagicMock()
 
-    filename = _structure_and_save("raw input", deepseek, git_sync, str(tmp_path))
+    filename = _structure_and_save("raw input", user_id=123, deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
 
-    saved_file = tmp_path / filename
+    saved_file = tmp_path / "123" / filename
     assert saved_file.exists()
     assert saved_file.read_text(encoding="utf-8") == '---\ntitle: "Test Note"\n---\n\nContent'
+
+
+def test_structure_and_save_creates_user_dir_if_missing(tmp_path):
+    deepseek = MagicMock()
+    deepseek.structure_note.return_value = "# Note\n\nContent"
+    git_sync = MagicMock()
+
+    _structure_and_save("raw input", user_id=987, deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
+
+    assert (tmp_path / "987").is_dir()
 
 
 def test_structure_and_save_calls_git_sync(tmp_path):
@@ -40,7 +51,7 @@ def test_structure_and_save_calls_git_sync(tmp_path):
     deepseek.structure_note.return_value = "# Note\n\nContent"
     git_sync = MagicMock()
 
-    _structure_and_save("raw input", deepseek, git_sync, str(tmp_path))
+    _structure_and_save("raw input", user_id=123, deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
 
     git_sync.sync.assert_called_once()
 
@@ -50,6 +61,6 @@ def test_structure_and_save_passes_text_to_deepseek(tmp_path):
     deepseek.structure_note.return_value = "# Note\n\nContent"
     git_sync = MagicMock()
 
-    _structure_and_save("my raw text", deepseek, git_sync, str(tmp_path))
+    _structure_and_save("my raw text", user_id=123, deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
 
     deepseek.structure_note.assert_called_once_with("my raw text")
