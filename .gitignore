@@ -5,3 +5,4 @@ __pycache__/
 *.egg-info/
 .venv/
 chroma_data/
+allowed_users.txt

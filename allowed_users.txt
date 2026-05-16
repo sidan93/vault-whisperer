@@ -1,0 +1,3 @@
+# Allowed Telegram user IDs (one per line)
+# To find your ID: message @userinfobot in Telegram
+# After editing: docker compose restart bot

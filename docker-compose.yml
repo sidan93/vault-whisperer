@@ -4,6 +4,7 @@ services:
     env_file: ./services/bot/.env
     volumes:
       - vault:/vault
+      - ./allowed_users.txt:/allowed_users.txt:ro
     networks:
       - internal
     depends_on:
