@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  bot:
+    build: ./services/bot
+    env_file: ./services/bot/.env
+    volumes:
+      - vault:/vault
+    networks:
+      - internal
+    depends_on:
+      - git-sync
+      - indexer
+    restart: unless-stopped
+
+  git-sync:
+    build: ./services/git-sync
+    env_file: ./services/git-sync/.env
+    volumes:
+      - vault:/vault
+      - ${SSH_KEY_PATH:-~/.ssh}:/root/.ssh:ro
+    networks:
+      - internal
+    restart: unless-stopped
+
+  indexer:
+    build: ./services/indexer
+    env_file: ./services/indexer/.env
+    volumes:
+      - vault:/vault
+    networks:
+      - internal
+    depends_on:
+      - chromadb
+    restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:latest
+    environment:
+      - IS_PERSISTENT=1
+    volumes:
+      - chroma_data:/chroma
+    networks:
+      - internal
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  vault:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../obsidian-vault
+  chroma_data:
