@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working Rules
+
+- **Superpowers обязательны:** перед любой задачей проверять и использовать подходящий skill через инструмент `Skill`.
+- **ADR для архитектурных решений:** любое нетривиальное решение (выбор технологии, изменение архитектуры, новый паттерн) оформлять как ADR в `docs/adr/YYYY-MM-DD-<title>.md`.
+- **Коммиты без соавторства LLM:** не добавлять `Co-Authored-By: Claude` и аналогичные строки в сообщения коммитов.
+
+---
+
 ## Project Overview
 
 vault-whisperer — Telegram-бот для захвата заметок и RAG-поиска по Obsidian vault. Работает на удалённом VPS через `docker-compose`. Vault хранится в отдельном приватном Git-репозитории (`../obsidian-vault/` рядом с этим репо).
