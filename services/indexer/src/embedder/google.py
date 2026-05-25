@@ -8,7 +8,7 @@ class GoogleEmbedder(EmbedderBase):
     def __init__(self) -> None:
         self._client = genai.Client(
             api_key=os.getenv("GOOGLE_API_KEY", ""),
-            http_options=types.HttpOptions(api_version="v1"),
+            http_options=types.HttpOptions(api_version="v1beta"),
         )
         self._model = "text-embedding-004"
 
