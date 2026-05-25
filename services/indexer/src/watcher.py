@@ -54,8 +54,9 @@ class VaultHandler(FileSystemEventHandler):
 
 
 def _initial_index(handler: VaultHandler, vault_path: str) -> None:
-    files = list(Path(vault_path).rglob("*.md"))
-    print(f"[initial_index] found {len(files)} .md files in {vault_path}", flush=True)
+    scan_path = Path(vault_path) / handler._notes_subdir if handler._notes_subdir else Path(vault_path)
+    files = list(scan_path.rglob("*.md")) if scan_path.exists() else []
+    print(f"[initial_index] found {len(files)} .md files in {scan_path}", flush=True)
     for path in files:
         print(f"[initial_index] indexing {path}", flush=True)
         try:
