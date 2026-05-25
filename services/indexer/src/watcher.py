@@ -54,11 +54,14 @@ class VaultHandler(FileSystemEventHandler):
 
 
 def _initial_index(handler: VaultHandler, vault_path: str) -> None:
-    import logging
-    logger = logging.getLogger(__name__)
-    for path in Path(vault_path).rglob("*.md"):
-        logger.info("Initial index: %s", path)
-        handler._handle(str(path))
+    files = list(Path(vault_path).rglob("*.md"))
+    print(f"[initial_index] found {len(files)} .md files in {vault_path}", flush=True)
+    for path in files:
+        print(f"[initial_index] indexing {path}", flush=True)
+        try:
+            handler._handle(str(path))
+        except Exception as e:
+            print(f"[initial_index] ERROR {path}: {e}", flush=True)
 
 
 def start_watcher(embedder: EmbedderBase, writer: ChromaWriter, vault_path: str, notes_subdir: str = "") -> Observer:
