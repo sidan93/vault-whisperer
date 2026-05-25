@@ -6,14 +6,15 @@ from auth import access_error
 
 
 def _filename_from_content(content: str) -> str:
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
     match = re.search(r"title:\s*[\"']?([^\"'\n]+)[\"']?", content)
     if match:
         title = match.group(1).strip()
         slug = re.sub(r"[^\w\s-]", "", title.lower())
         slug = re.sub(r"[\s_]+", "-", slug).strip("-")
         if slug:
-            return f"{slug}.md"
-    return f"{datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S')}.md"
+            return f"{timestamp}-{slug}.md"
+    return f"{timestamp}.md"
 
 
 def _structure_and_save(text: str, user_id: str, deepseek, git_sync, vault_path: str, notes_subdir: str = "") -> str:

@@ -1,12 +1,23 @@
-from unittest.mock import MagicMock
+import re
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from handlers.capture import _filename_from_content, _structure_and_save
 
+_DATETIME_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{6}-")
 
-def test_filename_from_frontmatter_title():
+
+def test_filename_starts_with_datetime_prefix():
+    """Имя файла всегда начинается с YYYY-MM-DD-HHMMSS-"""
     content = '---\ntitle: "My Python Note"\n---\n\nContent here'
     filename = _filename_from_content(content)
-    assert filename == "my-python-note.md"
+    assert _DATETIME_PREFIX_RE.match(filename), f"Нет datetime-префикса: {filename}"
+
+
+def test_filename_contains_title_slug():
+    """После datetime-префикса идёт slug из заголовка"""
+    content = '---\ntitle: "My Python Note"\n---\n\nContent here'
+    filename = _filename_from_content(content)
+    assert filename.endswith("-my-python-note.md"), f"Нет slug заголовка: {filename}"
 
 
 def test_filename_strips_special_chars():
@@ -17,11 +28,14 @@ def test_filename_strips_special_chars():
     assert "&" not in filename
 
 
-def test_filename_fallback_to_timestamp_when_no_title():
+def test_filename_without_title_has_only_datetime():
+    """Без title — только datetime, без лишних дефисов"""
     content = "# Header\n\nNo frontmatter here"
     filename = _filename_from_content(content)
-    assert filename.endswith(".md")
-    assert len(filename) > 4
+    # формат: YYYY-MM-DD-HHMMSS.md (без trailing dash перед .md)
+    assert re.match(r"^\d{4}-\d{2}-\d{2}-\d{6}\.md$", filename), (
+        f"Неверный формат без заголовка: {filename}"
+    )
 
 
 def test_structure_and_save_writes_to_user_subfolder(tmp_path):
