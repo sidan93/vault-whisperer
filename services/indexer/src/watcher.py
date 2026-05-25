@@ -21,9 +21,9 @@ class VaultHandler(FileSystemEventHandler):
             return
         source = os.path.relpath(path, self._vault_path)
         parts = Path(source).parts
-        # Если файл лежит в notes_subdir (inbox/<user_id>/...), user_id — второй уровень
-        if self._notes_subdir and parts[0] == self._notes_subdir:
-            if len(parts) < 3:
+        if self._notes_subdir:
+            # Индексируем только файлы внутри notes_subdir/<user_id>/
+            if parts[0] != self._notes_subdir or len(parts) < 3:
                 return
             user_id = parts[1]
         else:
