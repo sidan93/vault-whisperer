@@ -6,11 +6,8 @@ from embedder.base import EmbedderBase
 
 class GoogleEmbedder(EmbedderBase):
     def __init__(self) -> None:
-        self._client = genai.Client(
-            api_key=os.getenv("GOOGLE_API_KEY", ""),
-            http_options=types.HttpOptions(api_version="v1beta"),
-        )
-        self._model = "text-embedding-004"
+        self._client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY", ""))
+        self._model = "gemini-embedding-2"
 
     def embed(self, texts: list[str], task_type: str = "retrieval_document") -> list[list[float]]:
         results = []
