@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from chunker import chunk_markdown
 from chroma_writer import ChromaWriter
@@ -64,10 +64,10 @@ def _initial_index(handler: VaultHandler, vault_path: str) -> None:
             print(f"[initial_index] ERROR {path}: {e}", flush=True)
 
 
-def start_watcher(embedder: EmbedderBase, writer: ChromaWriter, vault_path: str, notes_subdir: str = "") -> Observer:
+def start_watcher(embedder: EmbedderBase, writer: ChromaWriter, vault_path: str, notes_subdir: str = "") -> PollingObserver:
     handler = VaultHandler(embedder=embedder, writer=writer, vault_path=vault_path, notes_subdir=notes_subdir)
     _initial_index(handler, vault_path)
-    observer = Observer()
+    observer = PollingObserver(timeout=10)
     observer.schedule(handler, vault_path, recursive=True)
     observer.start()
     return observer
