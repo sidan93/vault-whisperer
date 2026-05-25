@@ -72,7 +72,8 @@ def test_google_embedder_passes_task_type(mock_client_class):
     embedder.embed(["query text"], task_type="retrieval_query")
 
     call_kwargs = mock_client.models.embed_content.call_args.kwargs
-    assert call_kwargs.get("task_type") == "retrieval_query"
+    config = call_kwargs.get("config")
+    assert config.task_type == "RETRIEVAL_QUERY"
 
 
 @patch("embedder.google.genai.Client")

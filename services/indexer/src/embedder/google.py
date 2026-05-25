@@ -1,5 +1,6 @@
 import os
 from google import genai
+from google.genai import types
 from embedder.base import EmbedderBase
 
 
@@ -14,7 +15,7 @@ class GoogleEmbedder(EmbedderBase):
             response = self._client.models.embed_content(
                 model=self._model,
                 contents=text,
-                task_type=task_type,
+                config=types.EmbedContentConfig(task_type=task_type.upper()),
             )
             results.append(response.embeddings[0].values)
         return results
