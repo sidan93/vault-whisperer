@@ -1,108 +1,124 @@
 import re
 from unittest.mock import MagicMock, patch
-from pathlib import Path
-from handlers.capture import _filename_from_content, _structure_and_save
+from handlers.capture import _filename_from_title, _assemble_note, _capture_and_save
 
 _DATETIME_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{6}-")
 
 
 def test_filename_starts_with_datetime_prefix():
-    """Имя файла всегда начинается с YYYY-MM-DD-HHMMSS-"""
-    content = '---\ntitle: "My Python Note"\n---\n\nContent here'
-    filename = _filename_from_content(content)
-    assert _DATETIME_PREFIX_RE.match(filename), f"Нет datetime-префикса: {filename}"
+    filename = _filename_from_title("My Python Note")
+    assert _DATETIME_PREFIX_RE.match(filename), f"No datetime prefix: {filename}"
 
 
 def test_filename_contains_title_slug():
-    """После datetime-префикса идёт slug из заголовка"""
-    content = '---\ntitle: "My Python Note"\n---\n\nContent here'
-    filename = _filename_from_content(content)
-    assert filename.endswith("-my-python-note.md"), f"Нет slug заголовка: {filename}"
+    filename = _filename_from_title("My Python Note")
+    assert filename.endswith("-my-python-note.md"), f"Missing slug: {filename}"
 
 
 def test_filename_strips_special_chars():
-    content = '---\ntitle: "Notes: Python & Tips!"\n---\n\nContent'
-    filename = _filename_from_content(content)
+    filename = _filename_from_title("Notes: Python & Tips!")
     assert filename.endswith(".md")
     assert ":" not in filename
     assert "&" not in filename
 
 
-def test_filename_without_title_has_only_datetime():
-    """Без title — только datetime, без лишних дефисов"""
-    content = "# Header\n\nNo frontmatter here"
-    filename = _filename_from_content(content)
-    # формат: YYYY-MM-DD-HHMMSS.md (без trailing dash перед .md)
-    assert re.match(r"^\d{4}-\d{2}-\d{2}-\d{6}\.md$", filename), (
-        f"Неверный формат без заголовка: {filename}"
-    )
+def test_filename_empty_title_has_only_datetime():
+    filename = _filename_from_title("")
+    assert re.match(r"^\d{4}-\d{2}-\d{2}-\d{6}\.md$", filename), f"Bad format: {filename}"
 
 
-def test_structure_and_save_writes_to_user_subfolder(tmp_path):
+def test_assemble_note_body_is_raw_text():
+    note = _assemble_note("Title", ["tag1"], "original text unchanged")
+    assert "original text unchanged" in note
+
+
+def test_assemble_note_has_correct_frontmatter():
+    note = _assemble_note("My Title", ["tag1", "tag2"], "body")
+    assert note.startswith("---")
+    assert 'title: "My Title"' in note
+    assert "tag1" in note
+    assert "tag2" in note
+
+
+def test_assemble_note_with_empty_tags():
+    note = _assemble_note("Title", [], "body")
+    assert "tags: []" in note
+
+
+def test_capture_and_save_body_equals_raw_input(tmp_path):
     deepseek = MagicMock()
-    deepseek.structure_note.return_value = '---\ntitle: "Test Note"\n---\n\nContent'
+    deepseek.generate_metadata.return_value = {"title": "Test Note", "tags": ["test"]}
     git_sync = MagicMock()
 
-    filename = _structure_and_save("raw input", user_id="123", deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
+    with patch("handlers.capture.extract_urls", return_value=[]):
+        with patch("handlers.capture.fetch_titles", return_value={}):
+            filename = _capture_and_save(
+                "my raw text", user_id="123",
+                deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path),
+            )
 
-    saved_file = tmp_path / "123" / filename
-    assert saved_file.exists()
-    assert saved_file.read_text(encoding="utf-8") == '---\ntitle: "Test Note"\n---\n\nContent'
+    content = (tmp_path / "123" / filename).read_text(encoding="utf-8")
+    assert "my raw text" in content
 
 
-def test_structure_and_save_creates_user_dir_if_missing(tmp_path):
+def test_capture_and_save_writes_to_user_subfolder(tmp_path):
     deepseek = MagicMock()
-    deepseek.structure_note.return_value = "# Note\n\nContent"
+    deepseek.generate_metadata.return_value = {"title": "Test", "tags": []}
     git_sync = MagicMock()
 
-    _structure_and_save("raw input", user_id="987", deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
+    with patch("handlers.capture.extract_urls", return_value=[]):
+        with patch("handlers.capture.fetch_titles", return_value={}):
+            filename = _capture_and_save(
+                "text", user_id="42",
+                deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path),
+            )
 
-    assert (tmp_path / "987").is_dir()
+    assert (tmp_path / "42" / filename).exists()
 
 
-def test_structure_and_save_uses_notes_subdir(tmp_path):
+def test_capture_and_save_uses_notes_subdir(tmp_path):
     deepseek = MagicMock()
-    deepseek.structure_note.return_value = '---\ntitle: "Test Note"\n---\n\nContent'
+    deepseek.generate_metadata.return_value = {"title": "Test", "tags": []}
     git_sync = MagicMock()
 
-    filename = _structure_and_save(
-        "raw input", user_id="123", deepseek=deepseek, git_sync=git_sync,
-        vault_path=str(tmp_path), notes_subdir="inbox"
-    )
+    with patch("handlers.capture.extract_urls", return_value=[]):
+        with patch("handlers.capture.fetch_titles", return_value={}):
+            filename = _capture_and_save(
+                "text", user_id="42",
+                deepseek=deepseek, git_sync=git_sync,
+                vault_path=str(tmp_path), notes_subdir="inbox",
+            )
 
-    saved_file = tmp_path / "inbox" / "123" / filename
-    assert saved_file.exists()
+    assert (tmp_path / "inbox" / "42" / filename).exists()
 
 
-def test_structure_and_save_without_notes_subdir_keeps_root_behavior(tmp_path):
+def test_capture_and_save_calls_git_sync(tmp_path):
     deepseek = MagicMock()
-    deepseek.structure_note.return_value = '---\ntitle: "Test Note"\n---\n\nContent'
+    deepseek.generate_metadata.return_value = {"title": "Test", "tags": []}
     git_sync = MagicMock()
 
-    filename = _structure_and_save(
-        "raw input", user_id="123", deepseek=deepseek, git_sync=git_sync,
-        vault_path=str(tmp_path)
-    )
-
-    saved_file = tmp_path / "123" / filename
-    assert saved_file.exists()
-
-
-def test_structure_and_save_calls_git_sync(tmp_path):
-    deepseek = MagicMock()
-    deepseek.structure_note.return_value = "# Note\n\nContent"
-    git_sync = MagicMock()
-
-    _structure_and_save("raw input", user_id="123", deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
+    with patch("handlers.capture.extract_urls", return_value=[]):
+        with patch("handlers.capture.fetch_titles", return_value={}):
+            _capture_and_save(
+                "text", user_id="42",
+                deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path),
+            )
 
     git_sync.sync.assert_called_once()
 
 
-def test_structure_and_save_passes_text_to_deepseek(tmp_path):
+def test_capture_and_save_passes_url_titles_to_deepseek(tmp_path):
     deepseek = MagicMock()
-    deepseek.structure_note.return_value = "# Note\n\nContent"
+    deepseek.generate_metadata.return_value = {"title": "Link Note", "tags": ["ссылка"]}
     git_sync = MagicMock()
 
-    _structure_and_save("my raw text", user_id="123", deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path))
+    with patch("handlers.capture.extract_urls", return_value=["https://example.com"]):
+        with patch("handlers.capture.fetch_titles", return_value={"https://example.com": "Example"}):
+            _capture_and_save(
+                "https://example.com", user_id="42",
+                deepseek=deepseek, git_sync=git_sync, vault_path=str(tmp_path),
+            )
 
-    deepseek.structure_note.assert_called_once_with("my raw text")
+    deepseek.generate_metadata.assert_called_once_with(
+        "https://example.com", {"https://example.com": "Example"}
+    )
