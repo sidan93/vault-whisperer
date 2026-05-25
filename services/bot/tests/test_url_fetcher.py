@@ -60,3 +60,22 @@ def test_fetch_titles_returns_none_when_no_title_tag():
 
 def test_fetch_titles_handles_empty_list():
     assert fetch_titles([]) == {}
+
+
+def test_extract_urls_strips_trailing_punctuation():
+    assert extract_urls("See https://example.com.") == ["https://example.com"]
+    assert extract_urls("(https://example.com)") == ["https://example.com"]
+    assert extract_urls("Check https://example.com, https://github.com;") == [
+        "https://example.com",
+        "https://github.com",
+    ]
+    assert extract_urls("https://example.com!") == ["https://example.com"]
+
+
+def test_fetch_titles_does_not_skip_similar_domain():
+    # "text.me" contains "t.me" as substring but should NOT be skipped
+    mock_response = MagicMock()
+    mock_response.text = "<html><head><title>Not Skipped</title></head></html>"
+    with patch("url_fetcher.httpx.get", return_value=mock_response):
+        result = fetch_titles(["https://text.me/document"])
+    assert result == {"https://text.me/document": "Not Skipped"}
