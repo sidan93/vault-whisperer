@@ -117,6 +117,16 @@ Vault Obsidian хранится в **отдельном приватном ре�
 
 **LLM** — бот использует DeepSeek через OpenAI-совместимый API. Планируется вынести провайдера в конфиг, чтобы можно было переключиться на OpenAI, Anthropic или локальную модель без изменений в коде.
 
+## Useful Links
+
+**Telegram**
+- Создать бота и получить токен → [@BotFather](https://t.me/BotFather): `/newbot`
+- Узнать свой Telegram user ID → [@userinfobot](https://t.me/userinfobot): просто напиши ему любое сообщение
+
+**API Keys**
+- DeepSeek API → [platform.deepseek.com](https://platform.deepseek.com/)
+- Google Gemini API (для embeddings) → [aistudio.google.com](https://aistudio.google.com/app/apikey)
+
 ## License
 
 MIT
