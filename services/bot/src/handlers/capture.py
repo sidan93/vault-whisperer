@@ -21,7 +21,8 @@ def _assemble_note(title: str, tags: list[str], raw_text: str) -> str:
         tags_block = "tags:\n" + "\n".join(f"  - {t}" for t in tags)
     else:
         tags_block = "tags: []"
-    frontmatter = f'---\ntitle: "{title}"\ndate: {date}\n{tags_block}\n---'
+    escaped_title = title.replace("\\", "\\\\").replace('"', '\\"')
+    frontmatter = f'---\ntitle: "{escaped_title}"\ndate: {date}\n{tags_block}\n---'
     return f"{frontmatter}\n\n{raw_text}"
 
 

@@ -45,6 +45,11 @@ def test_assemble_note_with_empty_tags():
     assert "tags: []" in note
 
 
+def test_assemble_note_escapes_quotes_in_title():
+    note = _assemble_note('Title with "quotes"', [], "body")
+    assert 'title: "Title with \\"quotes\\""' in note
+
+
 def test_capture_and_save_body_equals_raw_input(tmp_path):
     deepseek = MagicMock()
     deepseek.generate_metadata.return_value = {"title": "Test Note", "tags": ["test"]}
