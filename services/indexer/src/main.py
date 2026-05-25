@@ -12,6 +12,7 @@ from watcher import start_watcher
 
 _VAULT_PATH = os.getenv("VAULT_PATH", "/vault")
 _CHROMA_HOST = os.getenv("CHROMA_HOST", "http://chromadb:8000")
+_NOTES_SUBDIR = os.getenv("NOTES_SUBDIR", "")
 
 _embedder: EmbedderBase | None = None
 _writer: ChromaWriter | None = None
@@ -25,7 +26,7 @@ async def lifespan(app: FastAPI):
     client = chromadb.HttpClient(host=h, port=int(p) if p else 8000)
     _embedder = get_embedder()
     _writer = ChromaWriter(client)
-    _observer = start_watcher(_embedder, _writer, _VAULT_PATH)
+    _observer = start_watcher(_embedder, _writer, _VAULT_PATH, _NOTES_SUBDIR)
     yield
     if _observer:
         _observer.stop()

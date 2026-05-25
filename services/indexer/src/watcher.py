@@ -10,19 +10,26 @@ from embedder.base import EmbedderBase
 
 
 class VaultHandler(FileSystemEventHandler):
-    def __init__(self, embedder: EmbedderBase, writer: ChromaWriter, vault_path: str) -> None:
+    def __init__(self, embedder: EmbedderBase, writer: ChromaWriter, vault_path: str, notes_subdir: str = "") -> None:
         self._embedder = embedder
         self._writer = writer
         self._vault_path = vault_path
+        self._notes_subdir = notes_subdir
 
     def _handle(self, path: str) -> None:
         if not path.endswith(".md"):
             return
         source = os.path.relpath(path, self._vault_path)
         parts = Path(source).parts
-        if len(parts) < 2:
-            return
-        user_id = parts[0]
+        # Если файл лежит в notes_subdir (inbox/<user_id>/...), user_id — второй уровень
+        if self._notes_subdir and parts[0] == self._notes_subdir:
+            if len(parts) < 3:
+                return
+            user_id = parts[1]
+        else:
+            if len(parts) < 2:
+                return
+            user_id = parts[0]
         content = Path(path).read_text(encoding="utf-8")
         chunks = chunk_markdown(content, source)
         if not chunks:
@@ -54,8 +61,8 @@ def _initial_index(handler: VaultHandler, vault_path: str) -> None:
         handler._handle(str(path))
 
 
-def start_watcher(embedder: EmbedderBase, writer: ChromaWriter, vault_path: str) -> Observer:
-    handler = VaultHandler(embedder=embedder, writer=writer, vault_path=vault_path)
+def start_watcher(embedder: EmbedderBase, writer: ChromaWriter, vault_path: str, notes_subdir: str = "") -> Observer:
+    handler = VaultHandler(embedder=embedder, writer=writer, vault_path=vault_path, notes_subdir=notes_subdir)
     _initial_index(handler, vault_path)
     observer = Observer()
     observer.schedule(handler, vault_path, recursive=True)
