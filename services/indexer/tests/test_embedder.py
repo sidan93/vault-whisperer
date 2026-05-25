@@ -29,7 +29,7 @@ def test_concrete_embedder_works_when_embed_implemented():
 
 
 def test_get_embedder_returns_google_by_default():
-    with patch.dict("os.environ", {"EMBEDDER_PROVIDER": "google"}):
+    with patch.dict("os.environ", {"EMBEDDER_PROVIDER": "google", "GOOGLE_API_KEY": "dummy"}):
         from embedder.google import GoogleEmbedder
         embedder = get_embedder()
     assert isinstance(embedder, GoogleEmbedder)
@@ -44,9 +44,17 @@ def test_get_embedder_raises_on_unknown_provider():
 from embedder.google import GoogleEmbedder
 
 
-@patch("embedder.google.genai.embed_content")
-def test_google_embedder_returns_vectors(mock_embed):
-    mock_embed.return_value = {"embedding": [0.1, 0.2, 0.3]}
+def _make_mock_client(values):
+    mock_client = MagicMock()
+    mock_embedding = MagicMock()
+    mock_embedding.values = values
+    mock_client.models.embed_content.return_value.embeddings = [mock_embedding]
+    return mock_client
+
+
+@patch("embedder.google.genai.Client")
+def test_google_embedder_returns_vectors(mock_client_class):
+    mock_client_class.return_value = _make_mock_client([0.1, 0.2, 0.3])
 
     embedder = GoogleEmbedder()
     result = embedder.embed(["hello world"])
@@ -55,23 +63,25 @@ def test_google_embedder_returns_vectors(mock_embed):
     assert result[0] == [0.1, 0.2, 0.3]
 
 
-@patch("embedder.google.genai.embed_content")
-def test_google_embedder_passes_task_type(mock_embed):
-    mock_embed.return_value = {"embedding": [0.1]}
+@patch("embedder.google.genai.Client")
+def test_google_embedder_passes_task_type(mock_client_class):
+    mock_client = _make_mock_client([0.1])
+    mock_client_class.return_value = mock_client
 
     embedder = GoogleEmbedder()
     embedder.embed(["query text"], task_type="retrieval_query")
 
-    call_kwargs = mock_embed.call_args.kwargs
+    call_kwargs = mock_client.models.embed_content.call_args.kwargs
     assert call_kwargs.get("task_type") == "retrieval_query"
 
 
-@patch("embedder.google.genai.embed_content")
-def test_google_embedder_handles_multiple_texts(mock_embed):
-    mock_embed.return_value = {"embedding": [0.1, 0.2]}
+@patch("embedder.google.genai.Client")
+def test_google_embedder_handles_multiple_texts(mock_client_class):
+    mock_client = _make_mock_client([0.1, 0.2])
+    mock_client_class.return_value = mock_client
 
     embedder = GoogleEmbedder()
     result = embedder.embed(["first", "second", "third"])
 
     assert len(result) == 3
-    assert mock_embed.call_count == 3
+    assert mock_client.models.embed_content.call_count == 3
