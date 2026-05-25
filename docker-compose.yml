@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
 
   chromadb:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.5.18
     environment:
       - IS_PERSISTENT=1
     volumes:
