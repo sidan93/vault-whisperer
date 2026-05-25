@@ -37,6 +37,7 @@ class ChromaWriter:
             query_embeddings=[query_embedding],
             n_results=min(n_results, count),
             include=["documents", "metadatas"],
+            where={"user_id": user_id},
         )
         output = []
         for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
