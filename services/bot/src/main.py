@@ -24,6 +24,7 @@ def main() -> None:
     app.bot_data["git_sync"] = GitSyncClient(os.getenv("GIT_SYNC_HOST", "http://git-sync:8000"))
     app.bot_data["indexer"] = IndexerClient(os.getenv("INDEXER_HOST", "http://indexer:8000"))
     app.bot_data["vault_path"] = os.getenv("VAULT_PATH", "/vault")
+    app.bot_data["notes_subdir"] = os.getenv("NOTES_SUBDIR", "inbox")
     try:
         app.bot_data["allowed_users"] = load_whitelist("/allowed_users.txt")
     except FileNotFoundError:

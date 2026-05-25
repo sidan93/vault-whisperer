@@ -46,6 +46,34 @@ def test_structure_and_save_creates_user_dir_if_missing(tmp_path):
     assert (tmp_path / "987").is_dir()
 
 
+def test_structure_and_save_uses_notes_subdir(tmp_path):
+    deepseek = MagicMock()
+    deepseek.structure_note.return_value = '---\ntitle: "Test Note"\n---\n\nContent'
+    git_sync = MagicMock()
+
+    filename = _structure_and_save(
+        "raw input", user_id="123", deepseek=deepseek, git_sync=git_sync,
+        vault_path=str(tmp_path), notes_subdir="inbox"
+    )
+
+    saved_file = tmp_path / "inbox" / "123" / filename
+    assert saved_file.exists()
+
+
+def test_structure_and_save_without_notes_subdir_keeps_root_behavior(tmp_path):
+    deepseek = MagicMock()
+    deepseek.structure_note.return_value = '---\ntitle: "Test Note"\n---\n\nContent'
+    git_sync = MagicMock()
+
+    filename = _structure_and_save(
+        "raw input", user_id="123", deepseek=deepseek, git_sync=git_sync,
+        vault_path=str(tmp_path)
+    )
+
+    saved_file = tmp_path / "123" / filename
+    assert saved_file.exists()
+
+
 def test_structure_and_save_calls_git_sync(tmp_path):
     deepseek = MagicMock()
     deepseek.structure_note.return_value = "# Note\n\nContent"
