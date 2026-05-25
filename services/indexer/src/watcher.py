@@ -46,8 +46,17 @@ class VaultHandler(FileSystemEventHandler):
             self._handle(event.src_path)
 
 
+def _initial_index(handler: VaultHandler, vault_path: str) -> None:
+    import logging
+    logger = logging.getLogger(__name__)
+    for path in Path(vault_path).rglob("*.md"):
+        logger.info("Initial index: %s", path)
+        handler._handle(str(path))
+
+
 def start_watcher(embedder: EmbedderBase, writer: ChromaWriter, vault_path: str) -> Observer:
     handler = VaultHandler(embedder=embedder, writer=writer, vault_path=vault_path)
+    _initial_index(handler, vault_path)
     observer = Observer()
     observer.schedule(handler, vault_path, recursive=True)
     observer.start()
