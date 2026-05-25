@@ -19,7 +19,7 @@ If the context is insufficient, say so honestly.
 Respond in the same language as the question."""
 
 
-def _parse_metadata(response: str) -> dict[str, str | list]:
+def _parse_metadata(response: str) -> dict[str, str | list[str]]:
     text = response.strip()
     match = re.search(r"---\s*\n(.*?)(?:\n---|\Z)", text, re.DOTALL)
     if match:
@@ -31,7 +31,7 @@ def _parse_metadata(response: str) -> dict[str, str | list]:
             tags = [str(t).strip() for t in (data.get("tags") or []) if t]
             if title:
                 return {"title": title, "tags": tags}
-    except Exception:
+    except (yaml.YAMLError, AttributeError, TypeError):
         pass
     return {"title": response.strip()[:60], "tags": []}
 
@@ -44,7 +44,7 @@ class DeepSeekClient:
         self,
         text: str,
         url_titles: dict[str, str | None] | None = None,
-    ) -> dict[str, str | list]:
+    ) -> dict[str, str | list[str]]:
         user_content = f"Message: {text}"
         if url_titles:
             lines = ["\n\nFetched page titles:"]
